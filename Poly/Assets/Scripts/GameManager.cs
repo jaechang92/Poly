@@ -34,8 +34,11 @@ public class GameManager : MonoBehaviour
 
     public eGameMode mode;
     public Transform camTr;
+    public HingeJoint snapObject;
 
     private GridEffect [] lGridEffect;
+
+
     void Start()
     {
         if (camTr == null)

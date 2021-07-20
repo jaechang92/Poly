@@ -3,7 +3,7 @@ using System.Collections.Generic;
 using UnityEngine;
 using UnityEngine.EventSystems;
 
-public class Snap : MonoBehaviour, IPointerDownHandler
+public class Snap : MonoBehaviour
 {
     public static Snap instance;
     private void Awake()
@@ -28,7 +28,8 @@ public class Snap : MonoBehaviour, IPointerDownHandler
     public List<GameObject> lCreateObject;
     public GameObject objectPool;
 
-    private bool isUI = false;
+    public bool isUI = false;
+    public float snapSize = 1;
 
     private void Start()
     {
@@ -41,39 +42,85 @@ public class Snap : MonoBehaviour, IPointerDownHandler
 
     private void Update()
     {
-        if (Input.GetMouseButtonDown(0))
+        switch (GameManager.instance.mode)
         {
-            startPoint = Camera.main.ScreenToWorldPoint(new Vector3(Input.mousePosition.x, Input.mousePosition.y, -Camera.main.transform.position.z));
-        }
+            case GameManager.eGameMode.UIMode:
+                if (Input.GetMouseButtonDown(0))
+                {
+                    startPoint = Camera.main.ScreenToWorldPoint(new Vector3(Input.mousePosition.x, Input.mousePosition.y, -Camera.main.transform.position.z));
+                    startPoint = ConvertGrid(startPoint, snapSize);
+                    if (!isUI)
+                    {
+                        CircleEffectOnOff(Input.mousePosition, true);
+                    }
 
-        if (Input.GetMouseButtonUp(0))
-        {
-            endPoint = Camera.main.ScreenToWorldPoint(new Vector3(Input.mousePosition.x, Input.mousePosition.y, -Camera.main.transform.position.z));
 
-            if (isUI)
-            {
-                isUI = false;
-                return;
-            }
-            
-            createObj = Resources.Load(UIManager.instance.selectMaterial) as GameObject;
-            CreateObject(createObj);
+
+                }
+
+                if (Input.GetMouseButtonUp(0))
+                {
+                    endPoint = Camera.main.ScreenToWorldPoint(new Vector3(Input.mousePosition.x, Input.mousePosition.y, -Camera.main.transform.position.z));
+                    endPoint = ConvertGrid(endPoint, snapSize);
+
+
+                    if (isUI)
+                    {
+                        isUI = false;
+                        return;
+                    }
+                    CircleEffectOnOff(startPoint, false);
+                    createObj = Resources.Load(UIManager.instance.selectMaterial) as GameObject;
+                    CreateObject(createObj);
+                }
+                break;
+            case GameManager.eGameMode.PlayMode:
+                CircleEffectOnOff(startPoint, false);
+                break;
+            default:
+                break;
         }
+        
 
     }
 
     public void CreateObject(GameObject obj)
     {
+        if (startPoint == endPoint)
+        {
+            return;
+        }
         Vector3 center = new Vector3((endPoint.x + startPoint.x)/2, (endPoint.y + startPoint.y)/2);
-        Instantiate(obj, center, Quaternion.Euler(0,90,0), objectPool.transform);
+        float distance = Vector3.Distance(startPoint, endPoint);
+        Debug.Log(distance);
+        GameObject cObject = Instantiate(obj, center, Quaternion.Euler(0,0,0), objectPool.transform);
+        cObject.transform.localScale = new Vector3(distance, cObject.transform.localScale.y, cObject.transform.localScale.z);
+        float angle = Mathf.Rad2Deg * Mathf.Atan2((endPoint.y - startPoint.y), (endPoint.x - startPoint.x));
+        if (endPoint.x - startPoint.x < 0)
+        {
+            angle += 180;
+        }
+        cObject.transform.localRotation = Quaternion.Euler(0, 0, angle);
+
     }
 
-    public void OnPointerDown(PointerEventData eventData)
+   
+    public void CircleEffectOnOff(Vector3 startPoint,bool onOff)
     {
-        Debug.Log(this.gameObject.name + " Was Clicked.");
-        if (eventData.selectedObject.layer == LayerMask.GetMask("UI"))
-        {
-            isUI = true;
-        }
+        UIManager.instance.circle.SetActive(onOff);
+        UIManager.instance.circleEffect.SetActive(onOff);
+        UIManager.instance.circle.transform.position = startPoint;
+        UIManager.instance.circleEffect.transform.position = startPoint;
     }
+
+    public Vector3 ConvertGrid(Vector3 v3 ,float converSize)
+    {
+        if (converSize == 0)
+        {
+            converSize = 1;
+        }
+        v3.Set(Mathf.Round(v3.x * converSize) / converSize, Mathf.Round(v3.y * converSize) / converSize, Mathf.Round(v3.z * converSize) / converSize);
+        return v3;
+    }
+
 }

@@ -18,7 +18,10 @@ public class UIManager : MonoBehaviour
         }
     }
     public string selectMaterial;
+    public GameObject circle, circleEffect;
+
     private GameObject UI;
+
     void Init()
     {
         StartCoroutine(WaitForLoading());

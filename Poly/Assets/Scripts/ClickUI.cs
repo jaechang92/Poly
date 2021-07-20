@@ -7,7 +7,7 @@ public class ClickUI : MonoBehaviour,IPointerDownHandler
 {
     public void OnPointerDown(PointerEventData eventData)
     {
-        Debug.Log("sssssssssssssssssssssssssss");
+        Snap.instance.isUI = true;
     }
 
 }
